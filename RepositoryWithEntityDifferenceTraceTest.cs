@@ -22,7 +22,7 @@ public class RepositoryWithEntityDifferenceTraceTest
 
         var logger = new TestLogger(_testOutputHelper);
 
-        var repo = new RepositoryWithEntityDifferenceTrace<Attachment>(new AttachementRepository(context), logger);
+        var repo = new RepositoryWithEntityDifferenceTrace<Attachment>(new Repository<Attachment>(context), logger);
 
         var id = Guid.NewGuid();
         
