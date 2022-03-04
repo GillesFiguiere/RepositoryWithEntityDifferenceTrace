@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Logging;
+﻿using System.Diagnostics;
+using System.Reflection;
+using Microsoft.Extensions.Logging;
 using Newtonsoft.Json;
 using Test.Persistence.Entities;
 
@@ -19,10 +21,44 @@ public class RepositoryWithEntityDifferenceTrace<T> : IRepository<T> where T : E
 
     public int CreateOrUpdate(T entity)
     {
+        var methodName = MethodBase.GetCurrentMethod()?.Name;
+        _logger.Log(
+            LogLevel.Information,
+            "Début de {Class}.{Method}<{Type}>",
+            GetType().Name,
+            methodName,
+            entity.GetType().Name);
+
         var initialEntity = Get(entity.Id);
         if (initialEntity != null) Log(entity, initialEntity);
+        
+        return CreateOrUpdateAndTraceExecutionDuration(entity, methodName);
+    }
 
-        return _repository.CreateOrUpdate(entity);
+    private int CreateOrUpdateAndTraceExecutionDuration(T entity, string? methodName)
+    {
+        var numberModified = 0;
+        
+        var stopWatch = new Stopwatch();
+        stopWatch.Start();
+        try
+        {
+            numberModified = _repository.CreateOrUpdate(entity);
+        }
+        finally
+        {
+            stopWatch.Stop();
+            _logger.Log(
+                LogLevel.Information,
+                "Fin de {Class}.{Method}<{Type}>, Durée {Duration} ms",
+                GetType().Name,
+                methodName,
+                entity.GetType().Name,
+                stopWatch.ElapsedMilliseconds
+            );
+        }
+
+        return numberModified;
     }
 
     private void Log(T entity, T? initialEntity) =>
